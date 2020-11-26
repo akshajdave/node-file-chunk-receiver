@@ -12,20 +12,15 @@ app.use(fileUpload());
 
 const fileStorage = {};
 
-app.post('/upload/single-stream', (req, res) => {
-
-    // let data = req.body.file;
-    // let buff = new Buffer(data, 'base64');
-    // console.log(buff.toString('ascii'));
-
+app.post('/upload/chunk', (req, res) => {
+    
     let chunks = [];
 
-    // const chunkSize = Number(req.headers["content-length"]);
     const chunkId = Number(req.headers["x-chunk-id"]);
     const fileName = req.headers["x-content-name"];
     const chunksQuantity = Number(req.headers["x-chunks-quantity"]);
+    const fileId = Number(req.headers["x-file-id"]);
 
-    const fileId = 1;
     const file = fileStorage[fileId] = fileStorage[fileId] || [];
 
     req.on("data", (part) => {
@@ -34,9 +29,11 @@ app.post('/upload/single-stream', (req, res) => {
     }).on("end", () => {
 
         const completeChunk= Buffer.concat(chunks);
+
+        // console.log(fileStorage);
         file[chunkId] = completeChunk;
 
-
+       
         if(chunksQuantity === chunkId + 1) {
             
             const completeFile = Buffer.concat(file);
@@ -46,13 +43,14 @@ app.post('/upload/single-stream', (req, res) => {
             fileStream.end();
             delete fileStorage[fileId];
         }
+        
         res.setHeader("Content-Type", "application/json");
         res.write(JSON.stringify({status: 200}));
         res.end();
 
     });
 
-   
+
 });
 
 app.get('/', (req, res) => {
